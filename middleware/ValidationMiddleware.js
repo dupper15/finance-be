@@ -67,3 +67,27 @@ export const budgetSchema = Joi.object({
     include_deposits: Joi.boolean().default(false),
     include_income: Joi.boolean().default(false)
 });
+
+export const profileUpdateSchema = Joi.object({
+    name: Joi.string().min(1).max(255).required(),
+    phone: Joi.string().pattern(/^[+]?[\d\s\-()]+$/).allow('', null),
+    preferences: Joi.object({
+        currency: Joi.string().valid('VND', 'USD', 'EUR').default('VND'),
+        language: Joi.string().valid('vi', 'en').default('vi'),
+        timezone: Joi.string().default('Asia/Ho_Chi_Minh'),
+        notifications: Joi.object({
+            email: Joi.boolean().default(true),
+            budget_alerts: Joi.boolean().default(true),
+            transaction_reminders: Joi.boolean().default(true)
+        }).default({})
+    }).default({})
+});
+
+export const changePasswordSchema = Joi.object({
+    current_password: Joi.string().required(),
+    new_password: Joi.string().min(6).required(),
+    confirm_password: Joi.string().valid(Joi.ref('new_password')).required()
+        .messages({
+            'any.only': 'Confirm password must match new password'
+        })
+});

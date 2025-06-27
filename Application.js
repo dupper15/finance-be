@@ -13,6 +13,7 @@ import { ErrorMiddleware } from './middleware/ErrorMiddleware.js';
 
 // Route classes
 import { AuthRoutes } from './routes/AuthRoutes.js';
+import { UserRoutes } from './routes/UserRoutes.js';
 import { AccountRoutes } from './routes/AccountRoutes.js';
 import { TransactionRoutes } from './routes/TransactionRoutes.js';
 import { BudgetRoutes } from './routes/BudgetRoutes.js';
@@ -21,7 +22,7 @@ import { TagRoutes } from './routes/TagRoutes.js';
 import { ScheduledTransactionRoutes } from './routes/ScheduledTransactionRoutes.js';
 import { DashboardRoutes } from './routes/DashboardRoutes.js';
 import { ReportRoutes } from './routes/ReportRoutes.js';
-import {ImportExportRoutes} from "./routes/ImportExportRoutes.js";
+import { ImportExportRoutes } from "./routes/ImportExportRoutes.js";
 
 export class Application {
     constructor() {
@@ -73,6 +74,7 @@ export class Application {
 
         // API Routes using OOP approach
         const authRoutes = new AuthRoutes(this.container);
+        const userRoutes = new UserRoutes(this.container);
         const accountRoutes = new AccountRoutes(this.container);
         const transactionRoutes = new TransactionRoutes(this.container);
         const budgetRoutes = new BudgetRoutes(this.container);
@@ -84,6 +86,7 @@ export class Application {
         const importExportRoutes = new ImportExportRoutes(this.container);
 
         this.app.use('/api/auth', authRoutes.getRouter());
+        this.app.use('/api/user', userRoutes.getRouter());
         this.app.use('/api/accounts', accountRoutes.getRouter());
         this.app.use('/api/transactions', transactionRoutes.getRouter());
         this.app.use('/api/budgets', budgetRoutes.getRouter());
