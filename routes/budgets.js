@@ -6,51 +6,231 @@ import { validateRequest, budgetSchema } from '../middleware/validation.js';
 const router = express.Router();
 router.use(authenticateToken);
 
-// Get all budgets
 router.get('/', async (req, res) => {
-    try {
-        const { data, error } = await supabase
-            .from('budgets')
-            .select(`
-        *,
-        accounts(name),
-        categories(name)
+  try {
+    const { user_id, month, year } = req.query;
+
+
+    if (!user_id || !month || !year) {
+      return res.status(400).json({
+        error: "Thiếu user_id, month hoặc year trong body",
+      });
+    }
+
+    const startDate = new Date(`${year}-${month}-01`);
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 1);
+
+    const { data: budgets, error } = await supabase
+      .from("budgets")
+      .select(`
+        budget_id,
+        name,
+        description,
+        amount,
+        duration,
+        start_date,
+        end_date,
+        account_id,
+        created_at,
+        updated_at,
+        user_id,
+        is_delete,
+        categories (
+          category_id,
+          name,
+          type,
+          created_at,
+          user_id,
+          is_delete
+        )
       `)
-            .eq('user_id', req.user.id)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
+      .eq("user_id", user_id)
+      .gte("start_date", startDate.toISOString())
+      .lt("start_date", endDate.toISOString())
+      .eq("is_delete", false)
+      .eq("categories.is_delete", false)
+      .order("created_at", { ascending: false });
+        console.log('budgets', budgets);
+    if (error) throw error;
 
-        if (error) throw error;
+    const grouped = {};
 
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+    for (const budget of budgets) {
+      const cat = budget.categories;
 
-// Create budget
-router.post('/', validateRequest(budgetSchema), async (req, res) => {
-    try {
-        const budgetData = {
-            ...req.body,
-            user_id: req.user.id
+      if (!cat) continue;
+
+      if (!grouped[cat.category_id]) {
+        grouped[cat.category_id] = {
+          category_id: cat.category_id,
+          name: cat.name,
+          type: cat.type,
+          created_at: cat.created_at,
+          user_id: cat.user_id,
+          budgets: [],
         };
+      }
 
-        const { data, error } = await supabase
-            .from('budgets')
-            .insert([budgetData])
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        res.status(201).json(data);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+      grouped[cat.category_id].budgets.push({
+        budget_id: budget.budget_id,
+        name: budget.name,
+        description: budget.description,
+        amount: budget.amount,
+        duration: budget.duration,
+        start_date: budget.start_date,
+        end_date: budget.end_date,
+        account_id: budget.account_id,
+        created_at: budget.created_at,
+        updated_at: budget.updated_at,
+        user_id: budget.user_id,
+      });
     }
+    const result = Object.values(grouped);
+    res.json(result);
+  } catch (error) {
+    console.error("Lỗi khi truy vấn ngân sách:", error.message);
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Get budget progress
+router.post('/', async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      amount,
+      duration,
+      start_date,
+      end_date,
+      account_id,
+      category_id,
+      user_id
+    } = req.body;
+
+    if (
+      !name ||
+      !amount ||
+      !duration ||
+      !start_date ||
+      !end_date ||
+      !account_id ||
+      !category_id ||
+      !user_id
+    ) {
+      return res.status(400).json({
+        error: 'Thiếu một hoặc nhiều trường bắt buộc trong body',
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .insert([
+        {
+          name,
+          description,
+          amount,
+          duration,
+          start_date,
+          end_date,
+          account_id,
+          category_id,
+          user_id,
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json(data);
+  } catch (error) {
+    console.error('Lỗi khi tạo ngân sách:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      description,
+      amount,
+      duration,
+      start_date,
+      end_date,
+      account_id,
+      category_id
+    } = req.body;
+    console.log('data', req.body);
+    if (
+      !name || !amount || !duration ||
+      !start_date || !end_date || !account_id || !category_id
+    ) {
+      console.log('Missing required fields');
+      return res.status(400).json({
+        error: "Thiếu một hoặc nhiều trường bắt buộc trong body",
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .update({
+        name,
+        description,
+        amount,
+        duration,
+        start_date,
+        end_date,
+        account_id,
+        category_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('budget_id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    if (!data) {
+      return res.status(404).json({ error: 'Không tìm thấy ngân sách để cập nhật' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('Lỗi khi cập nhật ngân sách:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('budgets')
+      .update({ is_delete: true })
+      .eq('budget_id', id)
+      .eq('is_delete', false) 
+      .select();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({
+        error: 'Ngân sách không tồn tại hoặc đã bị xoá',
+      });
+    }
+
+    res.json({
+      message: 'Đã xoá mềm ngân sách thành công',
+      budget: data[0]
+    });
+  } catch (error) {
+    console.error('Lỗi khi xoá ngân sách:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/:id/progress', async (req, res) => {
     try {
         // Get budget details
