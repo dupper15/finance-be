@@ -54,20 +54,6 @@ export const accountSchema = Joi.object({
     balance: Joi.number().precision(2).default(0)
 });
 
-export const budgetSchema = Joi.object({
-    name: Joi.string().min(1).max(255).required(),
-    amount: Joi.number().precision(2).positive().required(),
-    duration: Joi.string().valid('weekly', 'monthly', 'quarterly', 'yearly').required(),
-    start_date: Joi.date().iso().required(),
-    end_date: Joi.date().iso().greater(Joi.ref('start_date')).required(),
-    account_id: Joi.string().uuid().allow(null),
-    category_id: Joi.string().uuid().allow(null),
-    include_subcategories: Joi.boolean().default(false),
-    include_transfers: Joi.boolean().default(false),
-    include_deposits: Joi.boolean().default(false),
-    include_income: Joi.boolean().default(false)
-});
-
 export const profileUpdateSchema = Joi.object({
     name: Joi.string().min(1).max(255).required(),
     phone: Joi.string().pattern(/^[+]?[\d\s\-()]+$/).allow('', null),
@@ -90,4 +76,35 @@ export const changePasswordSchema = Joi.object({
         .messages({
             'any.only': 'Confirm password must match new password'
         })
+});
+
+export const budgetSchema = Joi.object({
+    name: Joi.string().min(1).max(255).required(),
+    description: Joi.string().max(500).allow('', null),
+    amount: Joi.number().precision(2).positive().required(),
+    duration: Joi.string().valid('weekly', 'monthly', 'quarterly', 'yearly').required(),
+    start_date: Joi.date().iso().required(),
+    end_date: Joi.date().iso().greater(Joi.ref('start_date')).required(),
+    account_id: Joi.string().uuid().required(),
+    category_id: Joi.string().uuid().required(),
+    include_subcategories: Joi.boolean().default(false),
+    include_transfers: Joi.boolean().default(false),
+    include_deposits: Joi.boolean().default(false),
+    include_income: Joi.boolean().default(false)
+});
+
+export const categorySchema = Joi.object({
+    name: Joi.string().min(1).max(100).required(),
+    type: Joi.string().valid('income', 'expense').required(),
+    description: Joi.string().max(500).allow('', null),
+    color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
+    parent_category_id: Joi.string().uuid().allow(null)
+});
+
+export const categoryUpdateSchema = Joi.object({
+    name: Joi.string().min(1).max(100).required(),
+    type: Joi.string().valid('income', 'expense'),
+    description: Joi.string().max(500).allow('', null),
+    color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
+    parent_category_id: Joi.string().uuid().allow(null)
 });

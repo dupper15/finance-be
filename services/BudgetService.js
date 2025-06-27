@@ -30,7 +30,7 @@ export class BudgetService extends BaseService {
     async update(userId, budgetId, budgetData) {
         // Verify ownership
         await this.getByUserAndId(userId, budgetId);
-        
+
         const updatedBudget = await this.budgetRepository.update(budgetId, budgetData);
         return new Budget(updatedBudget);
     }
@@ -38,13 +38,62 @@ export class BudgetService extends BaseService {
     async delete(userId, budgetId) {
         // Verify ownership
         await this.getByUserAndId(userId, budgetId);
-        
+
         return await this.budgetRepository.delete(budgetId);
+    }
+
+    async softDelete(userId, budgetId) {
+        // Verify ownership
+        await this.getByUserAndId(userId, budgetId);
+
+        const result = await this.budgetRepository.softDelete(budgetId);
+        return new Budget(result);
+    }
+
+    async getBudgetsByPeriod(userId, month, year) {
+        const startDate = new Date(`${year}-${String(month).padStart(2, '0')}-01`);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        const budgets = await this.budgetRepository.findByPeriod(
+            userId,
+            startDate.toISOString(),
+            endDate.toISOString()
+        );
+
+        // Group budgets by category
+        const grouped = {};
+
+        for (const budgetData of budgets) {
+            const budget = new Budget(budgetData);
+            const categoryId = budget.category_id;
+
+            if (!categoryId || !budgetData.categories) continue;
+
+            if (!grouped[categoryId]) {
+                grouped[categoryId] = {
+                    category_id: budgetData.categories.category_id,
+                    name: budgetData.categories.name,
+                    type: budgetData.categories.type,
+                    created_at: budgetData.categories.created_at,
+                    user_id: budgetData.categories.user_id,
+                    budgets: []
+                };
+            }
+
+            grouped[categoryId].budgets.push(budget.toJSON());
+        }
+
+        return Object.values(grouped);
+    }
+
+    async getBudgetsByCategory(userId, month, year) {
+        return this.getBudgetsByPeriod(userId, month, year);
     }
 
     async getBudgetProgress(userId, budgetId) {
         const budget = await this.getByUserAndId(userId, budgetId);
-        
+
         const budgetCriteria = {
             start_date: budget.start_date.toISOString(),
             end_date: budget.end_date.toISOString(),
@@ -55,7 +104,7 @@ export class BudgetService extends BaseService {
         };
 
         const transactions = await this.transactionRepository.findForBudgetCalculation(userId, budgetCriteria);
-        
+
         const spent = transactions.reduce((total, transaction) => {
             return total + parseFloat(transaction.amount);
         }, 0);
@@ -78,7 +127,7 @@ export class BudgetService extends BaseService {
 
         for (const budgetData of budgets) {
             const budget = new Budget(budgetData);
-            
+
             const budgetCriteria = {
                 start_date: budget.start_date.toISOString(),
                 end_date: budget.end_date.toISOString(),
@@ -89,11 +138,12 @@ export class BudgetService extends BaseService {
             };
 
             const transactions = await this.transactionRepository.findForBudgetCalculation(userId, budgetCriteria);
-            
+
             const spent = transactions.reduce((total, transaction) => {
                 return total + parseFloat(transaction.amount);
             }, 0);
 
+            const remaining = budget.amount - spent;
             const percentage = (spent / budget.amount) * 100;
 
             if (percentage >= 80) {

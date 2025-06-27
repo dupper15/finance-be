@@ -2,6 +2,7 @@ export class Budget {
     constructor(data = {}) {
         this.budget_id = data.budget_id;
         this.name = data.name;
+        this.description = data.description;
         this.amount = parseFloat(data.amount || 0);
         this.duration = data.duration;
         this.start_date = new Date(data.start_date);
@@ -14,6 +15,7 @@ export class Budget {
         this.include_income = data.include_income || false;
         this.user_id = data.user_id;
         this.is_active = data.is_active !== false;
+        this.is_delete = data.is_delete || false;
         this.created_at = data.created_at ? new Date(data.created_at) : new Date();
         this.updated_at = data.updated_at ? new Date(data.updated_at) : new Date();
     }
@@ -43,6 +45,12 @@ export class Budget {
         if (!this.user_id) {
             errors.push('User ID is required');
         }
+        if (!this.account_id) {
+            errors.push('Account ID is required');
+        }
+        if (!this.category_id) {
+            errors.push('Category ID is required');
+        }
 
         return errors;
     }
@@ -50,18 +58,20 @@ export class Budget {
     toDatabase() {
         return {
             name: this.name,
+            description: this.description || null,
             amount: this.amount,
             duration: this.duration,
             start_date: this.start_date.toISOString().split('T')[0],
             end_date: this.end_date.toISOString().split('T')[0],
-            account_id: this.account_id || null,
-            category_id: this.category_id || null,
+            account_id: this.account_id,
+            category_id: this.category_id,
             include_subcategories: this.include_subcategories,
             include_transfers: this.include_transfers,
             include_deposits: this.include_deposits,
             include_income: this.include_income,
             user_id: this.user_id,
-            is_active: this.is_active
+            is_active: this.is_active,
+            is_delete: this.is_delete
         };
     }
 
@@ -69,6 +79,7 @@ export class Budget {
         return {
             budget_id: this.budget_id,
             name: this.name,
+            description: this.description,
             amount: this.amount,
             duration: this.duration,
             start_date: this.start_date.toISOString().split('T')[0],
@@ -80,6 +91,7 @@ export class Budget {
             include_deposits: this.include_deposits,
             include_income: this.include_income,
             is_active: this.is_active,
+            is_delete: this.is_delete,
             created_at: this.created_at.toISOString(),
             updated_at: this.updated_at.toISOString()
         };
