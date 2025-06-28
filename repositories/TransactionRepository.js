@@ -10,13 +10,13 @@ export class TransactionRepository extends BaseRepository {
             .from(this.tableName)
             .select(`
                 *,
-                accounts!inner(name, account_type),
+                accounts!transactions_account_id_fkey(name, account_type),
+                transfer_accounts:accounts!transactions_transfer_account_id_fkey(name, account_type),
                 categories(name),
                 tags(name)
             `)
             .eq('user_id', userId);
 
-        // Apply additional filters
         if (filters.account_id) query = query.eq('account_id', filters.account_id);
         if (filters.category_id) query = query.eq('category_id', filters.category_id);
         if (filters.transaction_type) query = query.eq('transaction_type', filters.transaction_type);
@@ -24,10 +24,8 @@ export class TransactionRepository extends BaseRepository {
         if (filters.end_date) query = query.lte('transaction_date', filters.end_date);
         if (filters.search) query = query.ilike('description', `%${filters.search}%`);
 
-        // Apply ordering
         query = query.order('transaction_date', { ascending: false });
 
-        // Apply pagination
         if (options.limit) {
             const offset = options.offset || 0;
             query = query.range(offset, offset + options.limit - 1);
@@ -43,7 +41,8 @@ export class TransactionRepository extends BaseRepository {
             .from(this.tableName)
             .select(`
                 *,
-                accounts(name, account_type),
+                accounts!transactions_account_id_fkey(name, account_type),
+                transfer_accounts:accounts!transactions_transfer_account_id_fkey(name, account_type),
                 categories(name),
                 tags(name),
                 split_transactions(*)
