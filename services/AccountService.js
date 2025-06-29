@@ -14,6 +14,7 @@ export class AccountService extends BaseService {
     }
 
     async getByUserAndId(userId, accountId) {
+        
         const account = await this.accountRepository.findByUserAndId(userId, accountId);
         if (!account) {
             throw new NotFoundError('Account not found');

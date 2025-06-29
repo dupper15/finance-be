@@ -26,6 +26,30 @@ export class AccountController extends BaseController {
         }
     }
 
+   async getByUserId(req, res, next) {
+    try {
+        const accounts = await this.accountService.getByUserId(req.user.id);
+        console.log(accounts);
+
+        const jsonAccounts = accounts.map(account => {
+            return {
+                account_id: account.account_id,
+                name: account.name,
+                account_type: account.account_type,
+                balance: account.balance,
+                user_id: account.user_id,
+                is_active: account.is_active,
+                created_at: account.created_at,
+                updated_at: account.updated_at
+            };
+        });
+
+        res.json(jsonAccounts);
+    } catch (error) {
+        next(error);
+    }
+}
+
     async create(req, res, next) {
         try {
             const account = await this.accountService.create(req.user.id, req.body);

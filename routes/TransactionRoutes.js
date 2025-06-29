@@ -10,11 +10,12 @@ export class TransactionRoutes {
     }
 
     setupRoutes() {
-        this.router.use(authenticateToken);
+        this.router.use(authenticateToken );
 
         this.router.get('/', this.controller.getAll.bind(this.controller));
         this.router.get('/stats/summary', this.controller.getStatsSummary.bind(this.controller));
         this.router.get('/:id', this.controller.getById.bind(this.controller));
+    this.router.get('/accound/:id', this.controller.getByUserAndAccountId.bind(this.controller));
         this.router.post('/', validateRequest(transactionSchema), this.controller.create.bind(this.controller));
         this.router.put('/:id', validateRequest(transactionSchema), this.controller.update.bind(this.controller));
         this.router.delete('/:id', this.controller.delete.bind(this.controller));
