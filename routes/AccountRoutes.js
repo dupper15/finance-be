@@ -14,7 +14,8 @@ export class AccountRoutes {
         this.router.use(authenticateToken);
 
         this.router.get('/', this.controller.getAll.bind(this.controller));
-        this.router.get('/:id', this.controller.getById.bind(this.controller));
+      //  this.router.get('/:id', this.controller.getById.bind(this.controller));
+        this.router.get('/:id', this.controller.getByUserId.bind(this.controller));
         this.router.post('/', validateRequest(accountSchema), this.controller.create.bind(this.controller));
         this.router.put('/:id', validateRequest(accountSchema), this.controller.update.bind(this.controller));
         this.router.delete('/:id', this.controller.delete.bind(this.controller));

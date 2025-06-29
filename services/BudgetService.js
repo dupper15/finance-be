@@ -11,6 +11,7 @@ export class BudgetService extends BaseService {
 
     async getByUserId(userId, includeInactive = false) {
         const budgets = await this.budgetRepository.findByUserId(userId, includeInactive);
+        console.log("dsf",budgets.map(budget => new Budget(budget)));
         return budgets.map(budget => new Budget(budget));
     }
 
@@ -51,6 +52,7 @@ export class BudgetService extends BaseService {
     }
 
     async getBudgetsByPeriod(userId, month, year) {
+        console.log("Getting budgets for user:", userId, "Month:", month, "Year:", year);
         const startDate = new Date(`${year}-${String(month).padStart(2, '0')}-01`);
         const endDate = new Date(startDate);
         endDate.setMonth(endDate.getMonth() + 1);
@@ -83,7 +85,7 @@ export class BudgetService extends BaseService {
 
             grouped[categoryId].budgets.push(budget.toJSON());
         }
-
+        console.log("Grouped Budgets:", grouped);
         return Object.values(grouped);
     }
 
