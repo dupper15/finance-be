@@ -54,7 +54,8 @@ export class ScheduledTransactionRepository extends BaseRepository {
             .from(this.tableName)
             .select(`
                 *,
-                accounts(name)
+                accounts!scheduled_transactions_account_id_fkey(name, account_type),
+                transfer_accounts:accounts!scheduled_transactions_transfer_account_id_fkey(name, account_type)
             `)
             .eq('user_id', userId)
             .eq('is_active', true)
