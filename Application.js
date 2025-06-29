@@ -14,6 +14,7 @@ import { ErrorMiddleware } from './middleware/ErrorMiddleware.js';
 // Route classes
 import { AuthRoutes } from './routes/AuthRoutes.js';
 import { UserRoutes } from './routes/UserRoutes.js';
+import { TwoFactorAuthRoutes } from './routes/TwoFactorAuthRoutes.js';
 import { AccountRoutes } from './routes/AccountRoutes.js';
 import { TransactionRoutes } from './routes/TransactionRoutes.js';
 import { BudgetRoutes } from './routes/BudgetRoutes.js';
@@ -53,7 +54,7 @@ export class Application {
             origin: true, // Allow all origins in development
             credentials: true,
             methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with']
+            allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with', 'X-2FA-Token']
         }));
         this.app.use(compression());
         this.app.use(morgan('combined'));
@@ -75,6 +76,7 @@ export class Application {
         // API Routes using OOP approach
         const authRoutes = new AuthRoutes(this.container);
         const userRoutes = new UserRoutes(this.container);
+        const twoFactorAuthRoutes = new TwoFactorAuthRoutes(this.container);
         const accountRoutes = new AccountRoutes(this.container);
         const transactionRoutes = new TransactionRoutes(this.container);
         const budgetRoutes = new BudgetRoutes(this.container);
@@ -87,6 +89,7 @@ export class Application {
 
         this.app.use('/api/auth', authRoutes.getRouter());
         this.app.use('/api/user', userRoutes.getRouter());
+        this.app.use('/api/two-factor', twoFactorAuthRoutes.getRouter());
         this.app.use('/api/accounts', accountRoutes.getRouter());
         this.app.use('/api/transactions', transactionRoutes.getRouter());
         this.app.use('/api/budgets', budgetRoutes.getRouter());
@@ -124,6 +127,7 @@ export class Application {
         this.app.listen(port, () => {
             console.log(`Server is running on port ${port}`);
             console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`Two-Factor Authentication: Enabled`);
         });
     }
 

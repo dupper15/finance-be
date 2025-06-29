@@ -4,8 +4,9 @@ import { UnauthorizedError } from '../core/UnauthorizedError.js';
 import { ValidationError } from '../core/ValidationError.js';
 
 export class UserService {
-    constructor(userRepository) {
+    constructor(userRepository, twoFactorAuthRepository = null) {
         this.userRepository = userRepository;
+        this.twoFactorAuthRepository = twoFactorAuthRepository;
     }
 
     async getProfile(token) {
@@ -21,10 +22,8 @@ export class UserService {
     }
 
     async updateProfile(token, profileData) {
-        // First get current user to validate
         const currentUser = await this.getProfile(token);
 
-        // Create user object with new data for validation
         const updatedUserData = {
             ...currentUser,
             ...profileData
@@ -37,7 +36,6 @@ export class UserService {
             throw new ValidationError('Profile validation failed', errors);
         }
 
-        // Update user metadata in Supabase
         const supabaseUserData = {
             name: user.name,
             phone: user.phone,
@@ -49,24 +47,29 @@ export class UserService {
     }
 
     async changePassword(token, currentPassword, newPassword) {
-        // Get current user
         const currentUser = await this.getProfile(token);
 
-        // Verify current password
         try {
             await this.userRepository.verifyPassword(currentUser.email, currentPassword);
         } catch (error) {
             throw new UnauthorizedError('Current password is incorrect');
         }
 
-        // Validate new password
         if (!newPassword || newPassword.length < 6) {
             throw new ValidationError('New password must be at least 6 characters long');
         }
 
-        // Update password
         await this.userRepository.changePassword(token, newPassword);
         return { message: 'Password changed successfully' };
+    }
+
+    async verifyPassword(email, password) {
+        try {
+            await this.userRepository.verifyPassword(email, password);
+            return true;
+        } catch (error) {
+            throw new UnauthorizedError('Invalid password');
+        }
     }
 
     async getUserStats(userId) {
@@ -76,7 +79,6 @@ export class UserService {
             sum + parseFloat(account.balance), 0
         );
 
-        // Calculate monthly statistics
         const currentMonth = new Date();
         currentMonth.setDate(1);
         currentMonth.setHours(0, 0, 0, 0);
@@ -94,39 +96,43 @@ export class UserService {
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
         return {
-            total_accounts: statsData.accounts.length,
-            total_balance: totalBalance,
-            total_transactions: statsData.transactions.length,
-            total_budgets: statsData.budgets.length,
-            monthly_income: monthlyIncome,
-            monthly_expenses: monthlyExpenses,
-            monthly_net: monthlyIncome - monthlyExpenses
+            totalBalance,
+            accountsCount: statsData.accounts.length,
+            monthlyIncome,
+            monthlyExpenses,
+            budgetsCount: statsData.budgets.length,
+            transactionsCount: statsData.transactions.length
         };
     }
 
-    async deleteAccount(userId, token) {
-        // Verify user ownership
-        const currentUser = await this.getProfile(token);
-        if (currentUser.user_id !== userId) {
-            throw new UnauthorizedError('Cannot delete another user\'s account');
+    async getAccountSummary(token) {
+        const user = await this.getProfile(token);
+        const stats = await this.getUserStats(user.user_id);
+
+        let twoFactorStatus = null;
+        if (this.twoFactorAuthRepository) {
+            const twoFactorAuth = await this.twoFactorAuthRepository.findByUserId(user.user_id);
+            twoFactorStatus = {
+                isEnabled: twoFactorAuth ? twoFactorAuth.is_enabled : false,
+                isSetup: !!twoFactorAuth
+            };
         }
-
-        // Delete all user data first
-        await this.userRepository.deleteUserData(userId);
-
-        // Then delete the user account
-        await this.userRepository.deleteUser(userId);
-
-        return { message: 'Account deleted successfully' };
-    }
-
-    async getAccountSummary(userId) {
-        const user = await this.getProfile(userId);
-        const stats = await this.getUserStats(userId);
 
         return {
             user: user.toJSON(),
-            stats
+            stats,
+            twoFactorAuth: twoFactorStatus
         };
+    }
+
+    async deleteAccount(token) {
+        const user = await this.getProfile(token);
+
+        if (this.twoFactorAuthRepository) {
+            await this.twoFactorAuthRepository.deleteByUserId(user.user_id);
+        }
+
+        await this.userRepository.deleteUser(user.user_id);
+        return { message: 'Account deleted successfully' };
     }
 }

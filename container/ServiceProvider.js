@@ -34,6 +34,9 @@ import { AuthController } from '../controllers/AuthController.js';
 import { UserController } from '../controllers/UserController.js';
 import { ImportExportService } from "../services/ImportExportService.js";
 import { ImportExportController } from "../controllers/ImportExportController.js";
+import {TwoFactorAuthRepository} from "../repositories/TwoFactorAuthRepository.js";
+import {TwoFactorAuthService} from "../services/TwoFactorAuthService.js";
+import {TwoFactorAuthController} from "../controllers/TwoFactorAuthController.js";
 
 export class ServiceProvider {
     static register(container) {
@@ -61,6 +64,9 @@ export class ServiceProvider {
         );
         container.register('userRepository', (c) =>
             new UserRepository(c.get('database'))
+        );
+        container.register('twoFactorAuthRepository', (c) =>
+            new TwoFactorAuthRepository(c.get('database'))
         );
 
         // Services
@@ -101,10 +107,10 @@ export class ServiceProvider {
             )
         );
         container.register('authService', (c) =>
-            new AuthService(c.get('database'))
+            new AuthService(c.get('database'), c.get('twoFactorAuthRepository'))
         );
         container.register('userService', (c) =>
-            new UserService(c.get('userRepository'))
+            new UserService(c.get('userRepository'), c.get('twoFactorAuthRepository'))
         );
         container.register('importExportService', (c) =>
             new ImportExportService(
@@ -113,6 +119,9 @@ export class ServiceProvider {
                 c.get('categoryRepository'),
                 c.get('budgetRepository')
             )
+        );
+        container.register('twoFactorAuthService', (c) =>
+            new TwoFactorAuthService(c.get('twoFactorAuthRepository'))
         );
 
         // Controllers
@@ -148,6 +157,9 @@ export class ServiceProvider {
         );
         container.register('importExportController', (c) =>
             new ImportExportController(c.get('importExportService'))
+        );
+        container.register('twoFactorAuthController', (c) =>
+            new TwoFactorAuthController(c.get('twoFactorAuthService'), c.get('userService'))
         );
 
         return container;

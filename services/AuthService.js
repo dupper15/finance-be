@@ -1,6 +1,7 @@
 export class AuthService {
-    constructor(database) {
+    constructor(database, twoFactorAuthRepository = null) {
         this.db = database.getClient();
+        this.twoFactorAuthRepository = twoFactorAuthRepository;
     }
 
     async register(email, password, name, req) {
@@ -33,10 +34,43 @@ export class AuthService {
             throw new Error(error.message);
         }
 
+        if (this.twoFactorAuthRepository) {
+            const twoFactorAuth = await this.twoFactorAuthRepository.findByUserId(data.user.id);
+
+            if (twoFactorAuth && twoFactorAuth.is_enabled) {
+                return {
+                    message: 'Two-factor authentication required',
+                    user: data.user,
+                    session: data.session,
+                    requiresTwoFactor: true
+                };
+            }
+        }
+
         return {
             message: 'Login successful',
             user: data.user,
             session: data.session
+        };
+    }
+
+    async completeTwoFactorLogin(userId) {
+        const { data, error } = await this.db.auth.getUser();
+
+        if (error || !data.user || data.user.id !== userId) {
+            throw new Error('Invalid session for two-factor completion');
+        }
+
+        const { data: session, error: sessionError } = await this.db.auth.getSession();
+
+        if (sessionError || !session.session) {
+            throw new Error('Failed to retrieve session');
+        }
+
+        return {
+            message: 'Two-factor authentication completed',
+            user: data.user,
+            session: session.session
         };
     }
 
@@ -71,77 +105,67 @@ export class AuthService {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 20px;
+                    color: #333;
                 }
                 .container {
                     background: white;
-                    border-radius: 12px;
+                    padding: 3rem;
+                    border-radius: 20px;
                     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                    padding: 40px;
                     text-align: center;
-                    max-width: 400px;
-                    width: 100%;
+                    max-width: 500px;
+                    width: 90%;
                 }
-                .icon {
-                    width: 64px;
-                    height: 64px;
-                    background: #10B981;
+                .success-icon {
+                    width: 80px;
+                    height: 80px;
+                    background: #10b981;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    margin: 0 auto 24px;
-                }
-                .checkmark {
-                    width: 32px;
-                    height: 32px;
-                    stroke: white;
-                    stroke-width: 3;
-                    fill: none;
+                    margin: 0 auto 2rem;
+                    color: white;
+                    font-size: 2rem;
                 }
                 h1 {
-                    color: #111827;
-                    font-size: 24px;
-                    font-weight: 600;
-                    margin-bottom: 16px;
+                    color: #1f2937;
+                    margin-bottom: 1rem;
+                    font-size: 2rem;
                 }
                 p {
-                    color: #6B7280;
-                    font-size: 16px;
-                    line-height: 1.5;
-                    margin-bottom: 32px;
+                    color: #6b7280;
+                    margin-bottom: 2rem;
+                    line-height: 1.6;
                 }
                 .button {
-                    background: #3B82F6;
-                    color: white;
-                    text-decoration: none;
-                    padding: 12px 24px;
-                    border-radius: 8px;
-                    font-weight: 500;
                     display: inline-block;
-                    transition: background-color 0.2s;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 1rem 2rem;
+                    border-radius: 50px;
+                    text-decoration: none;
+                    font-weight: 600;
+                    transition: transform 0.2s;
+                    border: none;
+                    cursor: pointer;
                 }
                 .button:hover {
-                    background: #2563EB;
+                    transform: translateY(-2px);
                 }
                 .footer {
-                    margin-top: 32px;
-                    padding-top: 24px;
-                    border-top: 1px solid #E5E7EB;
-                    color: #9CA3AF;
-                    font-size: 14px;
+                    margin-top: 2rem;
+                    color: #9ca3af;
+                    font-size: 0.9rem;
                 }
             </style>
         </head>
         <body>
             <div class="container">
-                <div class="icon">
-                    <svg class="checkmark" viewBox="0 0 24 24">
-                        <path d="M20 6L9 17L4 12"></path>
-                    </svg>
-                </div>
+                <div class="success-icon">✓</div>
                 <h1>Email Confirmed!</h1>
-                <p>Your email has been successfully verified. You can now log in to your Controle Finance account.</p>
+                <p>Your email has been successfully verified.
+                You can now log in to your Controle Finance account.</p>
                 <a href="${process.env.FRONTEND_URL || 'http://localhost:4000'}/login" class="button">
                     Go to Login
                 </a>
