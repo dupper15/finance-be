@@ -16,14 +16,20 @@ export class TransactionService extends BaseService {
         };
     }
 
-    async getByUserAndId(userId, transactionId) {
+    async getByUserAndId(userId, transactionId ) {
         const transaction = await this.transactionRepository.findByUserAndId(userId, transactionId);
         if (!transaction) {
             throw new NotFoundError('Transaction not found');
         }
         return new Transaction(transaction);
     }
-
+    async getByUserAndAccountId(userId, accountId) {
+        const transactions = await this.transactionRepository.getByUserAndAccountId(userId, accountId);
+        if (!transactions || transactions.length === 0) {
+            throw new NotFoundError('No transactions found for this account');
+        }
+        return transactions;
+    }
     async create(userId, transactionData) {
         const data = { ...transactionData, user_id: userId };
         return super.create(data);
@@ -44,7 +50,7 @@ export class TransactionService extends BaseService {
         return await this.transactionRepository.delete(transactionId);
     }
 
-    async getStatsSummary(userId, startDate = null, endDate = null) {
+    async getStatsSummary(userId, startDate = null, endDate = null ) {
         const transactions = await this.transactionRepository.getStatsSummary(userId, startDate, endDate);
         
         return transactions.reduce((acc, transaction) => {

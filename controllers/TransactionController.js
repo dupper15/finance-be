@@ -49,15 +49,27 @@ export class TransactionController extends BaseController {
     }
 
     async getById(req, res, next) {
+        console.log("Fetching transaction by ID:", req.params.id);
         try {
             const transaction = await this.transactionService.getByUserAndId(req.user.id, req.params.id);
-            
+            console.log("Transaction:", transaction);
             res.json(transaction.toJSON());
         } catch (error) {
             next(error);
         }
     }
 
+    async getByUserAndAccountId(req, res, next) {
+        console.log("Fetching transaction by ID:", req.params.id);
+        try {
+            const transaction = await this.transactionService.getByUserAndAccountId(req.user.id, req.params.id);
+            console.log("Transaction:", transaction);
+            res.json(transaction.toJSON());
+        } catch (error) {
+            next(error);
+        }
+    }
+    
     async create(req, res, next) {
         try {
             const transaction = await this.transactionService.create(req.user.id, req.body);

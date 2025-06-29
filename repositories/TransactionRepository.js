@@ -35,7 +35,22 @@ export class TransactionRepository extends BaseRepository {
         if (error) throw error;
         return { data, count };
     }
+async getByUserAndAccountId(userId, accoundId) {
+        console.log("Finding transaction for user:", userId, "with ID:", accoundId);
+         const now = new Date();
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
+    const { data, error } = await this.db
+        .from(this.tableName)
+        .select('*')
+        .eq('user_id', userId)
+        .eq('account_id', accoundId)
+
+    if (error) throw error;
+    console.log("Transaction found:", data);
+    return data;
+    }
     async findByUserAndId(userId, transactionId) {
         const { data, error } = await this.db
             .from(this.tableName)
