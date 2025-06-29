@@ -66,10 +66,6 @@ export class BudgetRepository extends BaseRepository {
                 )
             `)
             .eq('user_id', userId)
-            .gte('start_date', startDate)
-            .lt('start_date', endDate)
-            .eq('is_delete', false)
-            .eq('categories.is_delete', false)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
