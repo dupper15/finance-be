@@ -11,7 +11,7 @@ export class ImportExportController {
         this.upload = multer({
             storage,
             limits: {
-                fileSize: 10 * 1024 * 1024 // 10MB limit
+                fileSize: 10 * 1024 * 1024
             },
             fileFilter: (req, file, cb) => {
                 const allowedTypes = [
@@ -65,7 +65,13 @@ export class ImportExportController {
             );
 
             res.setHeader('Content-Type', result.contentType);
-            res.setHeader('Content-Disposition', `attachment; filename=${result.filename}`);
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`);
+
+            if (format === 'csv') {
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Pragma', 'no-cache');
+            }
+
             res.send(result.data);
         } catch (error) {
             next(error);
@@ -77,7 +83,26 @@ export class ImportExportController {
             const result = await this.importExportService.exportBudgetReport(req.user.id);
 
             res.setHeader('Content-Type', result.contentType);
-            res.setHeader('Content-Disposition', `attachment; filename=${result.filename}`);
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`);
+            res.send(result.data);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    exportReport = async (req, res, next) => {
+        try {
+            const { month, year, account_id } = req.query;
+
+            const result = await this.importExportService.exportReport(
+                req.user.id,
+                month ? parseInt(month) : null,
+                year ? parseInt(year) : null,
+                account_id || null
+            );
+
+            res.setHeader('Content-Type', result.contentType);
+            res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`);
             res.send(result.data);
         } catch (error) {
             next(error);

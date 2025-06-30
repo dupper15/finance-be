@@ -23,6 +23,10 @@ export class ImportExportRoutes {
         this.router.get('/export/budget-report',
             this.controller.exportBudgetReport
         );
+
+        this.router.get('/export/report',
+            this.controller.exportReport
+        );
     }
 
     getRouter() {
