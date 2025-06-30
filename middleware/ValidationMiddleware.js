@@ -22,6 +22,7 @@ export const validateRequest = (schema) => {
 	return (req, res, next) => {
 		const { error } = schema.validate(req.body);
 		if (error) {
+			console.error("Joi Validation Error:", error.details);
 			return res.status(400).json({
 				error: "Validation Error",
 				details: error.details.map((detail) => detail.message),
