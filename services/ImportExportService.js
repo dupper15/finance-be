@@ -287,7 +287,12 @@ export class ImportExportService {
 
         return workbook;
     }
-    async exportReport(userId, month = null, year = null, accountId = null) {
+    async exportReport(userId, month = null, year = null, accountId = null, format = 'pdf') {
+        if (format === 'excel') {
+            return this.exportReportExcel(userId, month, year, accountId);
+        }
+
+        // Keep existing PDF logic
         const filters = {};
         if (month && year) {
             const startDate = new Date(year, month - 1, 1);
@@ -805,6 +810,170 @@ export class ImportExportService {
 
         await browser.close();
         return pdf;
+    }
+
+    async exportReportExcel(userId, month = null, year = null, accountId = null) {
+        const filters = {};
+        if (month && year) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+            filters.start_date = startDate.toISOString().split('T')[0];
+            filters.end_date = endDate.toISOString().split('T')[0];
+        }
+        if (accountId) {
+            filters.account_id = accountId;
+        }
+
+        try {
+            const [transactions, accounts] = await Promise.all([
+                this.transactionRepository.findByUserId(userId, filters),
+                this.accountRepository.findByUserId(userId)
+            ]);
+
+            let budgets = [];
+            try {
+                budgets = await this.budgetRepository.findByUserId(userId);
+            } catch (budgetError) {
+                console.warn('Could not fetch budgets for report:', budgetError.message);
+            }
+
+            const summary = this.calculateSummary(transactions.data);
+            const workbook = XLSX.utils.book_new();
+
+            // Summary Sheet
+            const summaryData = [
+                ['BÁO CÁO TÀI CHÍNH'],
+                ['Kỳ báo cáo:', month && year ? `Tháng ${month}/${year}` : 'Tất cả thời gian'],
+                ['Ngày tạo:', new Date().toLocaleString('vi-VN')],
+                [''],
+                ['TỔNG QUAN'],
+                ['Tổng thu nhập:', summary.totalIncome],
+                ['Tổng chi tiêu:', summary.totalExpenses],
+                ['Số dư ròng:', summary.netAmount],
+                ['Số giao dịch:', summary.transactionCount],
+                [''],
+                ['THU NHẬP THEO DANH MỤC'],
+                ['Danh mục', 'Số tiền']
+            ];
+
+            Object.entries(summary.incomeByCategory)
+                .sort(([,a], [,b]) => b - a)
+                .forEach(([category, amount]) => {
+                    summaryData.push([category, amount]);
+                });
+
+            summaryData.push([''], ['CHI TIÊU THEO DANH MỤC'], ['Danh mục', 'Số tiền']);
+
+            Object.entries(summary.expensesByCategory)
+                .sort(([,a], [,b]) => b - a)
+                .forEach(([category, amount]) => {
+                    summaryData.push([category, amount]);
+                });
+
+            const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+
+            // Format currency columns
+            const range = XLSX.utils.decode_range(summarySheet['!ref']);
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                const cellAddress = XLSX.utils.encode_cell({r: R, c: 1});
+                if (summarySheet[cellAddress] && typeof summarySheet[cellAddress].v === 'number') {
+                    summarySheet[cellAddress].z = '#,##0" đ"';
+                }
+            }
+
+            XLSX.utils.book_append_sheet(workbook, summarySheet, 'Tổng quan');
+
+            // Transactions Sheet
+            const transactionData = transactions.data.map(transaction => ({
+                'Ngày': new Date(transaction.transaction_date).toLocaleDateString('vi-VN'),
+                'Mô tả': transaction.description,
+                'Số tiền': transaction.amount,
+                'Loại': transaction.transaction_type === 'income' ? 'Thu nhập' : 'Chi tiêu',
+                'Tài khoản': transaction.accounts?.name || '',
+                'Danh mục': transaction.categories?.name || 'Không phân loại',
+                'Ghi chú': transaction.memo || ''
+            }));
+
+            const transactionSheet = XLSX.utils.json_to_sheet(transactionData);
+
+            // Format amount column
+            const transactionRange = XLSX.utils.decode_range(transactionSheet['!ref']);
+            for (let R = transactionRange.s.r + 1; R <= transactionRange.e.r; ++R) {
+                const amountCell = XLSX.utils.encode_cell({r: R, c: 2});
+                if (transactionSheet[amountCell]) {
+                    transactionSheet[amountCell].z = '#,##0" đ"';
+                }
+            }
+
+            XLSX.utils.book_append_sheet(workbook, transactionSheet, 'Chi tiết giao dịch');
+
+            // Accounts Sheet
+            if (accounts.length > 0) {
+                const accountData = accounts.map(account => ({
+                    'Tên tài khoản': account.name,
+                    'Loại tài khoản': account.account_type || '',
+                    'Số dư': parseFloat(account.balance || 0),
+                    'Mô tả': account.description || ''
+                }));
+
+                const accountSheet = XLSX.utils.json_to_sheet(accountData);
+
+                // Format balance column
+                const accountRange = XLSX.utils.decode_range(accountSheet['!ref']);
+                for (let R = accountRange.s.r + 1; R <= accountRange.e.r; ++R) {
+                    const balanceCell = XLSX.utils.encode_cell({r: R, c: 2});
+                    if (accountSheet[balanceCell]) {
+                        accountSheet[balanceCell].z = '#,##0" đ"';
+                    }
+                }
+
+                XLSX.utils.book_append_sheet(workbook, accountSheet, 'Tài khoản');
+            }
+
+            // Income by Category Sheet
+            if (Object.keys(summary.incomeByCategory).length > 0) {
+                const incomeData = Object.entries(summary.incomeByCategory)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([category, amount]) => ({
+                        'Danh mục': category,
+                        'Số tiền': amount,
+                        'Tỷ lệ %': ((amount / summary.totalIncome) * 100).toFixed(2)
+                    }));
+
+                const incomeSheet = XLSX.utils.json_to_sheet(incomeData);
+                XLSX.utils.book_append_sheet(workbook, incomeSheet, 'Thu nhập theo danh mục');
+            }
+
+            // Expense by Category Sheet
+            if (Object.keys(summary.expensesByCategory).length > 0) {
+                const expenseData = Object.entries(summary.expensesByCategory)
+                    .sort(([,a], [,b]) => b - a)
+                    .map(([category, amount]) => ({
+                        'Danh mục': category,
+                        'Số tiền': amount,
+                        'Tỷ lệ %': ((amount / summary.totalExpenses) * 100).toFixed(2)
+                    }));
+
+                const expenseSheet = XLSX.utils.json_to_sheet(expenseData);
+                XLSX.utils.book_append_sheet(workbook, expenseSheet, 'Chi tiêu theo danh mục');
+            }
+
+            const buffer = XLSX.write(workbook, {
+                type: 'buffer',
+                bookType: 'xlsx',
+                bookSST: true,
+                cellStyles: true
+            });
+
+            return {
+                data: buffer,
+                contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                filename: `bao-cao-tai-chinh-${month || 'all'}-${year || new Date().getFullYear()}.xlsx`
+            };
+        } catch (error) {
+            console.error('Error generating Excel report:', error);
+            throw error;
+        }
     }
 
     formatCurrency(amount) {

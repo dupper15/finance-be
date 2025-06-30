@@ -92,13 +92,14 @@ export class ImportExportController {
 
     exportReport = async (req, res, next) => {
         try {
-            const { month, year, account_id } = req.query;
+            const { month, year, account_id, format = 'pdf' } = req.query;
 
             const result = await this.importExportService.exportReport(
                 req.user.id,
                 month ? parseInt(month) : null,
                 year ? parseInt(year) : null,
-                account_id || null
+                account_id || null,
+                format
             );
 
             res.setHeader('Content-Type', result.contentType);
