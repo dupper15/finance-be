@@ -7,7 +7,8 @@ export class TwoFactorAuthController {
     async setup(req, res, next) {
         try {
             const userId = req.user.id;
-            const result = await this.twoFactorAuthService.setup(userId);
+            const userEmail = req.user.email;
+            const result = await this.twoFactorAuthService.setupTwoFactor(userId, userEmail);
 
             res.json({
                 success: true,
@@ -15,6 +16,7 @@ export class TwoFactorAuthController {
                 data: result
             });
         } catch (error) {
+            console.log(req)
             next(error);
         }
     }
@@ -38,7 +40,7 @@ export class TwoFactorAuthController {
                 });
             }
 
-            const result = await this.twoFactorAuthService.verify(userId, token);
+            const result = await this.twoFactorAuthService.verifyAndEnable(userId, token);
 
             res.json({
                 success: true,
