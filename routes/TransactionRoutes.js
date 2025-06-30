@@ -14,17 +14,17 @@ export class TransactionRoutes {
 
   setupRoutes() {
     this.router.use(authenticateToken);
-
+    this.router.get(
+      "/account",
+      this.controller.getByUserAndAccountId.bind(this.controller)
+    );
     this.router.get("/", this.controller.getAll.bind(this.controller));
     this.router.get(
       "/stats/summary",
       this.controller.getStatsSummary.bind(this.controller)
     );
     this.router.get("/:id", this.controller.getById.bind(this.controller));
-    this.router.get(
-      "/account/:id",
-      this.controller.getByUserAndAccountId.bind(this.controller)
-    );
+
     this.router.post(
       "/",
       validateRequest(transactionSchema),

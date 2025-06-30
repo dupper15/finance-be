@@ -49,6 +49,12 @@ export class TransactionRepository extends BaseRepository {
       "with ID:",
       accoundId
     );
+    console.log(
+      "Finding transaction for user9:",
+      userId,
+      "with ID:",
+      accoundId
+    );
     const now = new Date();
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
@@ -77,7 +83,7 @@ export class TransactionRepository extends BaseRepository {
   }
   async getByAccountIds(accountIds, month, year) {
     if (!Array.isArray(accountIds) || accountIds.length === 0) {
-      throw new Error("accountIds phải là mảng có ít nhất 1 phần tử");
+      throw new Error("accountIds phải  là mảng có ít nhất 1 phần tử");
     }
     if (typeof month !== "number" || month < 1 || month > 12) {
       throw new Error("month phải là số trong khoảng 1-12");

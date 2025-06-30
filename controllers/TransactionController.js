@@ -67,11 +67,11 @@ export class TransactionController extends BaseController {
   }
 
   async getByUserAndAccountId(req, res, next) {
-    console.log("Fetching transaction by ID:", req.params.id);
+    console.log("Fetching transaction by ID:", req.query.id);
     try {
       const transaction = await this.transactionService.getByUserAndAccountId(
         req.user.id,
-        req.params.id
+        req.query.id
       );
       return res.json(transaction);
     } catch (error) {
