@@ -12,20 +12,15 @@ export class CategoryRoutes {
     }
 
     setupValidationSchemas() {
+        // Updated to match actual database schema - only name and type
         this.categorySchema = Joi.object({
             name: Joi.string().min(1).max(100).required(),
-            type: Joi.string().valid('income', 'expense').required(),
-            description: Joi.string().max(500).allow('', null),
-            color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
-            parent_category_id: Joi.string().uuid().allow(null)
+            type: Joi.string().valid('income', 'expense').required()
         });
 
         this.categoryUpdateSchema = Joi.object({
             name: Joi.string().min(1).max(100).required(),
-            type: Joi.string().valid('income', 'expense'),
-            description: Joi.string().max(500).allow('', null),
-            color: Joi.string().pattern(/^#[0-9A-Fa-f]{6}$/).allow('', null),
-            parent_category_id: Joi.string().uuid().allow(null)
+            type: Joi.string().valid('income', 'expense').required()
         });
     }
 

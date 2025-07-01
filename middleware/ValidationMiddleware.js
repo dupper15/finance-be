@@ -110,20 +110,10 @@ export const budgetSchema = Joi.object({
 
 export const categorySchema = Joi.object({
 	name: Joi.string().min(1).max(100).required(),
-	type: Joi.string().valid("income", "expense").required(),
-	description: Joi.string().max(500).allow("", null),
-	color: Joi.string()
-		.pattern(/^#[0-9A-Fa-f]{6}$/)
-		.allow("", null),
-	parent_category_id: Joi.string().uuid().allow(null),
+	type: Joi.string().valid("income", "expense").required()
 });
 
 export const categoryUpdateSchema = Joi.object({
 	name: Joi.string().min(1).max(100).required(),
-	type: Joi.string().valid("income", "expense"),
-	description: Joi.string().max(500).allow("", null),
-	color: Joi.string()
-		.pattern(/^#[0-9A-Fa-f]{6}$/)
-		.allow("", null),
-	parent_category_id: Joi.string().uuid().allow(null),
+	type: Joi.string().valid("income", "expense").required()
 });
