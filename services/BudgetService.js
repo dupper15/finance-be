@@ -63,15 +63,16 @@ export class BudgetService extends BaseService {
     return new Budget(result);
   }
 
-  async getBudgetsByPeriod(userId, month, year) {
+  async getBudgetsByPeriod(accountId, userId, month, year) {
     const startDate = new Date(`${year}-${String(month).padStart(2, "0")}-01`);
     const endDate = new Date(startDate);
     endDate.setMonth(endDate.getMonth() + 1);
-
+    console.log("alo", accountId, userId, startDate, endDate);
     const budgets = await this.budgetRepository.findByPeriod(
       userId,
       startDate.toISOString(),
-      endDate.toISOString()
+      endDate.toISOString(),
+      accountId
     );
 
     const grouped = {};

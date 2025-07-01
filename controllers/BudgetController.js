@@ -8,12 +8,15 @@ export class BudgetController extends BaseController {
 
   async getAll(req, res, next) {
     try {
-      const { month, year } = req.query;
+      const { month, year, account_id } = req.query;
+      console.log("3");
+      console.log("fd", account_id);
       const user_id = req.user.id; // Get user_id from token
       console.log("Query Params:", user_id);
       // If month and year are provided, get budgets for specific period
       if (month && year) {
         const budgets = await this.budgetService.getBudgetsByPeriod(
+          account_id,
           user_id,
           parseInt(month),
           parseInt(year)
@@ -32,6 +35,8 @@ export class BudgetController extends BaseController {
     try {
       console.log("Fetching budget with ID:", req.params.id);
       console.log("User ID from token:", req.user.id);
+      console.log("Request Params:", req.params);
+      console.log("4");
       const budget = await this.budgetService.getByUserAndId(
         req.user.id,
         req.params.id

@@ -42,7 +42,7 @@ export class BudgetRepository extends BaseRepository {
     return data;
   }
 
-  async findByPeriod(userId, startDate) {
+  async findByPeriod(userId, startDate, endDate, accountId) {
     const { data, error } = await this.db
       .from(this.tableName)
       .select(
@@ -71,9 +71,11 @@ export class BudgetRepository extends BaseRepository {
       )
       .eq("user_id", userId)
       .eq("is_delete", false)
+      .eq("account_id", accountId)
       .lte("start_date", startDate)
       .gte("end_date", startDate)
       .order("created_at", { ascending: false });
+    console.log("data", data, "error", error);
     if (error) throw error;
     return data;
   }
