@@ -153,7 +153,10 @@ export class ServiceProvider {
             new AuthController(c.get('authService'))
         );
         container.register('userController', (c) =>
-            new UserController(c.get('userService'))
+            new UserController(
+                c.get('userService'),
+                c.get('twoFactorAuthService')
+            )
         );
         container.register('importExportController', (c) =>
             new ImportExportController(c.get('importExportService'))

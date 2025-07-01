@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken } from '../middleware/AuthMiddleware.js';
+import {authenticateToken, createTwoFactorMiddleware} from '../middleware/AuthMiddleware.js';
 import { ValidationMiddleware } from '../middleware/ValidationMiddleware.js';
 import Joi from 'joi';
 
@@ -7,6 +7,7 @@ export class UserRoutes {
     constructor(container) {
         this.router = express.Router();
         this.controller = container.get('userController');
+        this.twoFactorAuthRepository = container.get('twoFactorAuthRepository');
         this.setupValidationSchemas();
         this.setupRoutes();
     }
@@ -48,7 +49,9 @@ export class UserRoutes {
         );
 
         // Change password
+
         this.router.post('/change-password',
+            createTwoFactorMiddleware(this.twoFactorAuthRepository),
             ValidationMiddleware.validateRequest(this.changePasswordSchema),
             this.controller.changePassword.bind(this.controller)
         );

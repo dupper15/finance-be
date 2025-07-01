@@ -46,9 +46,10 @@ export class UserController {
         }
     }
 
+
     async changePassword(req, res, next) {
         try {
-            const { current_password, new_password } = req.body;
+            const { current_password, new_password, confirm_password } = req.body;
             const token = req.headers.authorization?.split(' ')[1];
 
             if (!token) {
@@ -58,11 +59,43 @@ export class UserController {
                 });
             }
 
-            if (!current_password || !new_password) {
+            if (!current_password || !new_password || !confirm_password) {
                 return res.status(400).json({
                     success: false,
-                    error: 'Current password and new password are required'
+                    error: 'Current password, new password, and confirm password are required'
                 });
+            }
+
+            if (new_password !== confirm_password) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'New password and confirm password do not match'
+                });
+            }
+
+            if (req.twoFactorAuth && req.twoFactorAuth.is_enabled) {
+                const twoFactorToken = req.headers['x-2fa-token'];
+                if (!twoFactorToken) {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Two-factor authentication required',
+                        requiresTwoFactor: true
+                    });
+                }
+
+                try {
+                    await this.twoFactorAuthService.verifyToken(
+                        req.user.id,
+                        twoFactorToken,
+                        req.ip,
+                        req.get('User-Agent')
+                    );
+                } catch (error) {
+                    return res.status(401).json({
+                        success: false,
+                        error: 'Invalid two-factor authentication code'
+                    });
+                }
             }
 
             const result = await this.userService.changePassword(token, current_password, new_password);
