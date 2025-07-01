@@ -10,9 +10,9 @@ export class TransactionService extends BaseService {
 
   async getByUserId(userId, filters = {}, options = {}) {
     const result = await this.transactionRepository.findByUserId(
-      userId,
-      filters,
-      options
+        userId,
+        filters,
+        options
     );
     return {
       data: result.data.map((transaction) => new Transaction(transaction)),
@@ -22,18 +22,19 @@ export class TransactionService extends BaseService {
 
   async getByUserAndId(userId, transactionId) {
     const transaction = await this.transactionRepository.findByUserAndId(
-      userId,
-      transactionId
+        userId,
+        transactionId
     );
     if (!transaction) {
       throw new NotFoundError("Transaction not found");
     }
     return new Transaction(transaction);
   }
+
   async getByUserAndAccountId(userId, accountId) {
     const transactions = await this.transactionRepository.getByUserAndAccountId(
-      userId,
-      accountId
+        userId,
+        accountId
     );
     if (!transactions || transactions.length === 0) {
       throw new NotFoundError("No transactions found for this account");
@@ -41,37 +42,37 @@ export class TransactionService extends BaseService {
     console.log("Transactions found:", transactions);
     return transactions;
   }
+
   async getByAccountIds(accountIds, month, year) {
     const transactions = await this.transactionRepository.getByAccountIds(
-      accountIds,
-      month,
-      year
+        accountIds,
+        month,
+        year
     );
     if (!transactions || transactions.length === 0) {
       throw new NotFoundError(
-        "No transactions found for the specified accounts"
+          "No transactions found for the specified accounts"
       );
     }
     return transactions.map((transaction) => new Transaction(transaction));
   }
+
   async create(userId, transactionData) {
     const data = { ...transactionData, user_id: userId };
     return super.create(data);
   }
 
   async update(userId, transactionId, transactionData) {
-    // Verify ownership
     await this.getByUserAndId(userId, transactionId);
 
     const updatedTransaction = await this.transactionRepository.update(
-      transactionId,
-      transactionData
+        transactionId,
+        transactionData
     );
     return new Transaction(updatedTransaction);
   }
 
   async delete(userId, transactionId) {
-    // Verify ownership
     await this.getByUserAndId(userId, transactionId);
 
     return await this.transactionRepository.delete(transactionId);
@@ -79,30 +80,30 @@ export class TransactionService extends BaseService {
 
   async getStatsSummary(userId, startDate = null, endDate = null) {
     const transactions = await this.transactionRepository.getStatsSummary(
-      userId,
-      startDate,
-      endDate
+        userId,
+        startDate,
+        endDate
     );
 
     return transactions.reduce(
-      (acc, transaction) => {
-        const amount = parseFloat(transaction.amount);
+        (acc, transaction) => {
+          const amount = parseFloat(transaction.amount);
 
-        if (transaction.transaction_type === "income") {
-          acc.totalIncome += amount;
-        } else if (transaction.transaction_type === "expense") {
-          acc.totalExpenses += amount;
-        }
+          if (transaction.transaction_type === "income") {
+            acc.totalIncome += amount;
+          } else if (transaction.transaction_type === "expense") {
+            acc.totalExpenses += amount;
+          }
 
-        return acc;
-      },
-      {
-        totalIncome: 0,
-        totalExpenses: 0,
-        get netIncome() {
-          return this.totalIncome - this.totalExpenses;
+          return acc;
         },
-      }
+        {
+          totalIncome: 0,
+          totalExpenses: 0,
+          get netIncome() {
+            return this.totalIncome - this.totalExpenses;
+          },
+        }
     );
   }
 
@@ -116,9 +117,9 @@ export class TransactionService extends BaseService {
     startDate.setMonth(startDate.getMonth() - months);
 
     const transactions = await this.transactionRepository.getStatsSummary(
-      userId,
-      startDate.toISOString(),
-      new Date().toISOString()
+        userId,
+        startDate.toISOString(),
+        new Date().toISOString()
     );
 
     const monthlyData = {};
@@ -126,7 +127,7 @@ export class TransactionService extends BaseService {
     transactions.forEach((transaction) => {
       const date = new Date(transaction.transaction_date);
       const monthKey = `${date.getFullYear()}-${String(
-        date.getMonth() + 1
+          date.getMonth() + 1
       ).padStart(2, "0")}`;
 
       if (!monthlyData[monthKey]) {
@@ -152,9 +153,9 @@ export class TransactionService extends BaseService {
       ...month,
       net: month.income - month.expense,
       savingsRate:
-        month.income > 0
-          ? ((month.income - month.expense) / month.income) * 100
-          : 0,
+          month.income > 0
+              ? ((month.income - month.expense) / month.income) * 100
+              : 0,
     }));
   }
 }

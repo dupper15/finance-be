@@ -42,32 +42,7 @@ export class TransactionRepository extends BaseRepository {
     return { data, count };
   }
 
-  async getByUserAndAccountId(userId, accountId) {
-    console.log(
-        "Finding transaction for user:",
-        userId,
-        "with ID:",
-        accountId
-    );
-
-    const { data, error } = await this.db
-        .from(this.tableName)
-        .select(
-            `
-                *,
-                accounts!transactions_account_id_fkey(name, account_type),
-                transfer_accounts:accounts!transactions_transfer_account_id_fkey(name, account_type),
-                categories(name)
-            `
-        )
-        .eq("user_id", userId)
-        .eq("account_id", accountId);
-
-    if (error) throw error;
-    return data;
-  }
-
-  async getByUserAndId(userId, transactionId) {
+  async findByUserAndId(userId, transactionId) {
     console.log(
         "Finding transaction for user:",
         userId,
@@ -89,6 +64,60 @@ export class TransactionRepository extends BaseRepository {
         .eq("transaction_id", transactionId)
         .single();
 
+    if (error) throw error;
+    return data;
+  }
+
+  async getByUserAndAccountId(userId, accountId) {
+    console.log(
+        "Finding transaction for user:",
+        userId,
+        "with account ID:",
+        accountId
+    );
+
+    const { data, error } = await this.db
+        .from(this.tableName)
+        .select(
+            `
+                *,
+                accounts!transactions_account_id_fkey(name, account_type),
+                transfer_accounts:accounts!transactions_transfer_account_id_fkey(name, account_type),
+                categories(name)
+            `
+        )
+        .eq("user_id", userId)
+        .eq("account_id", accountId);
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getByAccountIds(accountIds, month, year) {
+    let query = this.db
+        .from(this.tableName)
+        .select(
+            `
+                *,
+                accounts!transactions_account_id_fkey(name, account_type),
+                transfer_accounts:accounts!transactions_transfer_account_id_fkey(name, account_type),
+                categories(name)
+            `
+        )
+        .in("account_id", accountIds);
+
+    if (month && year) {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0, 23, 59, 59);
+
+      query = query
+          .gte("transaction_date", startDate.toISOString())
+          .lte("transaction_date", endDate.toISOString());
+    }
+
+    query = query.order("transaction_date", { ascending: false });
+
+    const { data, error } = await query;
     if (error) throw error;
     return data;
   }
