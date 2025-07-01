@@ -7,13 +7,12 @@ export class Transaction {
         this.transaction_date = new Date(data.transaction_date || new Date());
         this.transaction_type = data.transaction_type;
         this.category_id = data.category_id;
-        this.tag_id = data.tag_id;
         this.memo = data.memo;
-        this.is_split = data.is_split || false;
         this.transfer_account_id = data.transfer_account_id;
         this.user_id = data.user_id;
         this.created_at = data.created_at ? new Date(data.created_at) : new Date();
         this.updated_at = data.updated_at ? new Date(data.updated_at) : new Date();
+        this.scheduled_transaction_id = data.scheduled_transaction_id;
     }
 
     validate() {
@@ -62,11 +61,10 @@ export class Transaction {
             transaction_date: this.transaction_date.toISOString(),
             transaction_type: this.transaction_type,
             category_id: this.category_id || null,
-            tag_id: this.tag_id || null,
             memo: this.memo || null,
-            is_split: this.is_split,
             transfer_account_id: this.transfer_account_id || null,
-            user_id: this.user_id
+            user_id: this.user_id,
+            scheduled_transaction_id: this.scheduled_transaction_id || null
         };
     }
 
@@ -79,12 +77,12 @@ export class Transaction {
             transaction_date: this.transaction_date.toISOString(),
             transaction_type: this.transaction_type,
             category_id: this.category_id,
-            tag_id: this.tag_id,
             memo: this.memo,
-            is_split: this.is_split,
             transfer_account_id: this.transfer_account_id,
             created_at: this.created_at.toISOString(),
-            updated_at: this.updated_at.toISOString()
+            updated_at: this.updated_at.toISOString(),
+            user_id: this.user_id,
+            scheduled_transaction_id: this.scheduled_transaction_id
         };
     }
 

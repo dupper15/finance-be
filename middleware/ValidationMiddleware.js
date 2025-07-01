@@ -32,7 +32,7 @@ export const validateRequest = (schema) => {
 	};
 };
 
-// Keep original validation schemas for compatibility
+// Updated transaction schema to match actual database schema
 export const transactionSchema = Joi.object({
 	account_id: Joi.string().uuid().required(),
 	description: Joi.string().min(1).max(500).required(),
@@ -42,7 +42,6 @@ export const transactionSchema = Joi.object({
 		.valid("income", "expense", "transfer")
 		.required(),
 	category_id: Joi.string().uuid().allow(null),
-	tag_id: Joi.string().uuid().allow(null),
 	memo: Joi.string().max(1000).allow("", null),
 	transfer_account_id: Joi.string()
 		.uuid()
@@ -51,6 +50,7 @@ export const transactionSchema = Joi.object({
 			then: Joi.required(),
 			otherwise: Joi.allow(null),
 		}),
+	scheduled_transaction_id: Joi.string().uuid().allow(null),
 });
 
 export const accountSchema = Joi.object({
@@ -108,6 +108,7 @@ export const budgetSchema = Joi.object({
 	include_income: Joi.boolean().default(false),
 });
 
+// Updated category schemas to match actual database schema
 export const categorySchema = Joi.object({
 	name: Joi.string().min(1).max(100).required(),
 	type: Joi.string().valid("income", "expense").required()
