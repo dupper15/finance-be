@@ -65,6 +65,7 @@ export class BudgetController extends BaseController {
 
   async update(req, res, next) {
     try {
+      console.log("Updating budget with ID:", req.body);
       const updateData = {
         ...req.body,
         updated_at: new Date().toISOString(),

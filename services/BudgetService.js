@@ -40,6 +40,7 @@ export class BudgetService extends BaseService {
   async update(userId, budgetId, budgetData) {
     // Verify ownership
     await this.getByUserAndId(userId, budgetId);
+    console.log("Updating budget with ID:", budgetId);
 
     const updatedBudget = await this.budgetRepository.update(
       budgetId,
@@ -76,7 +77,7 @@ export class BudgetService extends BaseService {
     );
 
     const grouped = {};
-
+    console.log("23432", budgets);
     for (const budgetData of budgets) {
       const budget = new Budget(budgetData);
       const categoryId = budget.category_id;
